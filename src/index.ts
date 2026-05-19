@@ -6,11 +6,20 @@ const app = new Hono()
 // 挂载页面路由
 app.route('/', pageRouter)
 
-const PORT = 3000
+Bun.serve({
+  hostname: "0.0.0.0",
+  port: 80,
 
-console.log(`服务启动: http://localhost:${PORT}`)
+  // 性能
+  maxRequestBodySize: 1024 * 1024 * 10, // 最大请求体 10MB
+  idleTimeout: 60,                      // 连接空闲超时（秒）
 
-export default {
-  port: PORT,
-  fetch: app.fetch
-}
+  // Hono
+  fetch: app.fetch,
+
+  // 错误
+  error(err) {
+    console.error(err);
+    return new Response("Internal Server Error", { status: 500 });
+  },
+});

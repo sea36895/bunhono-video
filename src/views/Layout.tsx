@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'hono/jsx'
+import type { PropsWithChildren } from 'hono/jsx' // <-- 这里加 type
 
 interface LayoutProps extends PropsWithChildren {
   title: string
