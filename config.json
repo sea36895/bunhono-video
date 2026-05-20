@@ -10,7 +10,7 @@
     {"name": "红牛资源", "url": "https://www.hongniuzy2.com/api.php/provide/vod/at/xml/"},
     {"name": "如意资源", "url": "https://cj.rycjapi.com/api.php/provide/vod/at/xml/"}
   ],
-  "videoParser": "https://hhjiexi.com/play/?url=",
+  "videoParser": "https://vip.zykbf.com/?url=",
   "templateName": "default",
   "sortDesc": "no",
   "showTimeLimit": "",
