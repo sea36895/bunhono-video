@@ -51,7 +51,10 @@ function getTextValue(value: any): string {
 }
 
 const app = new Hono();
-const config: Config = await Bun.file('./config.json').json();
+
+async function getConfig(): Promise<Config> {
+  return await Bun.file('./config.json').json();
+}
 
 app.use('*', logger());
 app.use('*', cors());
@@ -280,6 +283,7 @@ app.get('/', async (c) => {
     uniqueId = decodeURIComponent(searchKey);
   }
 
+  const config = await getConfig();
   const defaultApi = config.apis[0];
   const apiIndex = parseInt(apiSelect) - 1;
   const currentApi = config.apis[apiIndex] || defaultApi;
