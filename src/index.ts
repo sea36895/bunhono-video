@@ -52,12 +52,31 @@ function getTextValue(value: any): string {
 
 const app = new Hono();
 
+let configCache: Config | null = null;
+let configLastUpdate = 0;
+const configCacheDuration = 60000;
+
 async function getConfig(): Promise<Config> {
-  return await Bun.file('./config.json').json();
+  const now = Date.now();
+  if (configCache && now - configLastUpdate < configCacheDuration) {
+    return configCache;
+  }
+  configCache = await Bun.file('./config.json').json();
+  configLastUpdate = now;
+  return configCache;
 }
 
 app.use('*', logger());
 app.use('*', cors());
+
+app.use(async (c, next) => {
+  try {
+    await next();
+  } catch (error) {
+    console.error('Server error:', error);
+    return c.html('<html><body><h1>500 Internal Server Error</h1><p>服务器内部错误，请稍后重试</p></body></html>', 500);
+  }
+});
 
 function generateRandomChineseIP(): string {
   const ipRanges = [
@@ -86,8 +105,11 @@ function long2ip(long: number): string {
   return `${a & 0xff}.${b & 0xff}.${c & 0xff}.${d & 0xff}`;
 }
 
-async function fetchAPI(url: string, userAgent: string = 'Mozilla/5.0 (Unknown; Linux x86_64) AppleWebKit/537.36'): Promise<string | null> {
+async function fetchAPI(url: string, userAgent: string = 'Mozilla/5.0 (Unknown; Linux x86_64) AppleWebKit/537.36', timeout: number = 15000): Promise<string | null> {
   const ips = generateRandomChineseIP();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
   try {
     const response = await fetch(url, {
       method: 'GET',
@@ -95,12 +117,19 @@ async function fetchAPI(url: string, userAgent: string = 'Mozilla/5.0 (Unknown; 
         'X-Forwarded-For': ips,
         'User-Agent': userAgent,
         'Accept-Encoding': 'gzip'
-      }
+      },
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     if (!response.ok) return null;
     return await response.text();
-  } catch (e) {
-    console.error('API请求失败:', e);
+  } catch (e: any) {
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') {
+      console.error('API请求超时:', url);
+    } else {
+      console.error('API请求失败:', e);
+    }
     return null;
   }
 }
@@ -557,8 +586,43 @@ function renderInfoPage(c: any, videoInfo: Video, playerScript: string, baseUrl:
 ${playerScript}`;
 }
 
-console.log('Server is running on http://localhost:80');
-export default {
+app.all('*', async (c) => {
+  const baseUrl = new URL(c.req.url).origin;
+  return c.html(`<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>404 Not Found</title>
+<style>
+  body { text-align: center; padding: 50px; font-family: sans-serif; }
+  h1 { font-size: 48px; color: #333; }
+  p { font-size: 18px; color: #666; }
+  a { color: #007bff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>404</h1>
+<p>页面不存在</p>
+<p><a href="${baseUrl}">返回首页</a></p>
+</body>
+</html>`, 404);
+});
+
+Bun.serve({
   port: 80,
-  fetch: app.fetch
-};
+  hostname: "0.0.0.0",
+  fetch: app.fetch,
+  development: false,
+  maxRequestBodySize: 1024 * 1024,
+  idleTimeout: 60,
+
+  error(err: any) {
+    console.error('Bun服务底层错误：', err);
+    return new Response(JSON.stringify({ code: 500, msg: '服务异常' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+});
+console.log('Server is running on http://localhost:80');

@@ -103,46 +103,58 @@ GET /?wd=关键词&pg=1    # 搜索
 GET /?info=视频ID       # 视频详情
 ```
 
-## Linux 部署指南
+## Linux 部署指南（Debian 12 / 低内存优化）
 
-### 1. 安装 Bun
+### 1. 安装基础依赖
+
+```bash
+sudo apt update && sudo apt install -y curl git
+```
+
+### 2. 安装 Bun
 
 ```bash
 curl -fsSL https://bun.sh/install | bash
 source ~/.bashrc
 ```
 
-### 2. 克隆项目
+### 3. 克隆项目
 
 ```bash
 git clone https://github.com/your-repo/bunhono-video.git
 cd bunhono-video
 ```
 
-### 3. 安装依赖
+### 4. 安装依赖
 
 ```bash
-bun install
+bun install --production
 ```
 
-### 4. 使用 80 端口运行
-
-由于 80 端口是特权端口，需要使用 sudo 或以 root 用户运行：
+### 5. 构建生产版本（低内存推荐）
 
 ```bash
-sudo bun run start
+bun run build
 ```
 
-或者使用 setcap 授予权限（推荐）：
+### 6. 使用 80 端口运行
+
+#### 方式一：使用 sudo（简单）
 
 ```bash
-sudo setcap 'cap_net_bind_service=+ep' /path/to/bun
-bun run start
+sudo NODE_ENV=production bun run prod
 ```
 
-### 5. 后台运行
+#### 方式二：使用 setcap 授予权限（推荐）
 
-使用 systemd 创建服务（推荐）：
+```bash
+sudo setcap 'cap_net_bind_service=+ep' $(which bun)
+NODE_ENV=production bun run prod
+```
+
+### 7. 后台运行（低内存优化）
+
+创建 systemd 服务文件：
 
 ```bash
 sudo nano /etc/systemd/system/bunhono-video.service
@@ -159,9 +171,13 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=/path/to/bunhono-video
-ExecStart=/path/to/bun run start
+ExecStart=/usr/local/bin/bun dist/index.js
+Environment=NODE_ENV=production
 Restart=always
 RestartSec=5
+LimitNOFILE=4096
+CPUQuota=50%
+MemoryLimit=100M
 
 [Install]
 WantedBy=multi-user.target
@@ -181,11 +197,34 @@ sudo systemctl start bunhono-video
 sudo systemctl status bunhono-video
 ```
 
-### 6. 配置防火墙
+### 8. 配置防火墙
 
 ```bash
 sudo ufw allow 80/tcp
 sudo ufw reload
+```
+
+### 9. 低内存优化建议
+
+| 优化项 | 说明 |
+|--------|------|
+| **内存限制** | systemd 设置 MemoryLimit=100M |
+| **CPU 限制** | systemd 设置 CPUQuota=50% |
+| **生产构建** | 使用 bun build 编译为单文件 |
+| **禁用开发模式** | development: false |
+| **连接超时** | idleTimeout: 60 秒 |
+
+### 10. 资源监控
+
+```bash
+# 查看内存使用
+free -h
+
+# 查看进程资源
+top -p $(pgrep -f bun)
+
+# 查看日志
+journalctl -u bunhono-video -f
 ```
 
 ## License
