@@ -1,0 +1,34 @@
+{
+  "site": {
+    "name": "影视资源",
+    "domain": "demo.test",
+    "email": "admin@admin.com"
+  },
+  "apis": [
+    {"name": "豪华资源", "url": "https://hhzyapi.com/api.php/provide/vod/at/xml"},
+    {"name": "无尽资源", "url": "https://api.wujinapi.me/api.php/provide/vod/from/wjm3u8/at/xml/"},
+    {"name": "红牛资源", "url": "https://www.hongniuzy2.com/api.php/provide/vod/at/xml/"},
+    {"name": "如意资源", "url": "https://cj.rycjapi.com/api.php/provide/vod/at/xml/"}
+  ],
+  "videoParser": "https://hhjiexi.com/play/?url=",
+  "templateName": "default",
+  "sortDesc": "no",
+  "showTimeLimit": "",
+  "seo": {
+    "title": {
+      "list": "{{CURRENT_CATEGORY}} - {{SITE_NAME}}",
+      "search": "{{SEARCH_KEYWORD}}的搜索结果 - {{SITE_NAME}}",
+      "info": "{{VIDEO_NAME}} - {{SITE_NAME}}"
+    },
+    "keywords": {
+      "list": "{{CURRENT_CATEGORY}},最新电影,最新电视,最新综艺,最新动漫",
+      "search": "{{SEARCH_KEYWORD}},最新电影,最新电视,最新综艺,最新动漫",
+      "info": "{{VIDEO_NAME}},最新电影,最新电视,最新综艺,最新动漫"
+    },
+    "description": {
+      "list": "{{SITE_NAME}}提供最新的电影、电视、综艺、动漫在线播放服务",
+      "search": "{{SITE_NAME}}提供{{SEARCH_KEYWORD}}的在线播放服务",
+      "info": "{{SITE_NAME}}提供{{VIDEO_NAME}}的在线播放服务"
+    }
+  }
+}
