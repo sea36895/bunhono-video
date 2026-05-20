@@ -137,8 +137,8 @@ async function handleDataCache(
   
   switch (sort) {
     case 'category':
-      // 分类直接用首页内容来提取
-      requestUrl = `${apiUrl}?ac=videolist&pg=1`;
+      // 使用 ac=list 获取分类
+      requestUrl = `${apiUrl}?ac=list`;
       break;
     case 'info':
       requestUrl = `${apiUrl}?ac=videolist&ids=${id}${showTimeLimit}`;
@@ -176,11 +176,43 @@ async function handleDataCache(
   }
 
   if (sort === 'category') {
-    // 从视频列表API中提取出现的分类
+    // 正确解析 ac=list 返回的分类数据
     const xmlData = parseXML(remoteData);
-    const categories: Array<{ 分类号: string; 分类名: string }> = [{ 分类号: '', 分类名: '最近更新' }];
+    const categories: Array<{ 分类号: string; 分类名: string }> = [{ 分类号: '', 分类名: '首页' }];
     
-    if (xmlData?.rss?.list?.video) {
+    // 尝试从不同路径获取分类
+    let typesArray: any[] = [];
+    
+    if (xmlData?.rss?.class?.ty) {
+      typesArray = Array.isArray(xmlData.rss.class.ty) ? xmlData.rss.class.ty : [xmlData.rss.class.ty];
+    } else if (xmlData?.class?.ty) {
+      typesArray = Array.isArray(xmlData.class.ty) ? xmlData.class.ty : [xmlData.class.ty];
+    }
+    
+    for (const ty of typesArray) {
+      let cateId = '';
+      let cateName = '';
+      
+      if (typeof ty === 'object') {
+        cateId = ty['@id'] || ty['@attributes']?.id || '';
+        cateName = ty['#text'] || ty['#cdata-section'] || ty['name'] || '';
+        if (typeof cateName === 'object') {
+          cateName = getTextValue(cateName);
+        }
+      } else {
+        cateName = String(ty);
+      }
+      
+      if (cateId && cateName && cateName !== 'undefined' && cateName.trim()) {
+        categories.push({
+          分类号: String(cateId),
+          分类名: cateName.trim()
+        });
+      }
+    }
+    
+    // 如果还是没有分类，尝试从视频列表中提取
+    if (categories.length === 1 && xmlData?.rss?.list?.video) {
       const typeMap = new Map<string, string>();
       const videos = Array.isArray(xmlData.rss.list.video) ? xmlData.rss.list.video : [xmlData.rss.list.video];
       
@@ -192,26 +224,12 @@ async function handleDataCache(
         }
       }
       
-      // 按tid排序
       const sortedTypes = Array.from(typeMap.entries()).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
       for (const [tid, name] of sortedTypes) {
         categories.push({ 分类号: tid, 分类名: name });
       }
     }
     
-    // 加入一些默认分类以防万一
-    const defaultTypes = [
-      { id: '1', name: '电视剧' },
-      { id: '2', name: '电影' },
-      { id: '3', name: '动漫' },
-      { id: '27', name: '综艺' },
-      { id: '17', name: '动画' }
-    ];
-    for (const dt of defaultTypes) {
-      if (!categories.find(c => c['分类号'] === dt.id)) {
-        categories.push({ 分类号: dt.id, 分类名: dt.name });
-      }
-    }
     return { data: categories, pagecount: 1, xml: remoteData };
   } else {
     const xmlData = parseXML(remoteData);
@@ -291,13 +309,13 @@ app.get('/', async (c) => {
       ddList.push(dlData);
     }
     
-    // 构建用于前端的 bflist 结构
+    // 构建用于前端的 bflist 结构 - 只保留m3u8源
     const bfList: any = { dd: [] };
     for (const item of ddList) {
-      if (typeof item === 'string') {
-        bfList.dd.push({ '#text': item, '@flag': 'yun' });
-      } else if (item && typeof item === 'object') {
-        bfList.dd.push(item);
+      if (typeof item === 'object' && item['@flag']) {
+        if (item['@flag'].toLowerCase().includes('m3u8')) {
+          bfList.dd.push(item);
+        }
       }
     }
     
@@ -448,7 +466,7 @@ function renderListPage(c: any, videoList: Video[], title: string, pagination: a
       <div class="box-item">
         <a class="item-link" href="${baseUrl}?info=${getTextValue(video.id)}" title="${getTextValue(video.name)}">
           <img src="${getTextValue(video.pic) || 'https://placehold.co/200x280?text=No+Image'}" alt="${getTextValue(video.name)}">
-          <button class="hdtag">${getTextValue(video.year) || '未知'}</button>
+          <button class="hdtag">${getTextValue(video.type) || '未知'}</button>
         </a>
         <div class="meta">
           <div class="item-name"><a class="movie-name" title="${getTextValue(video.name)}" href="${baseUrl}?info=${getTextValue(video.id)}">${getTextValue(video.name) || '未知'}</a></div>
