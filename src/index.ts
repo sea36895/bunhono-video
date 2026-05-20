@@ -10,9 +10,12 @@ Bun.serve({
   hostname: "0.0.0.0",
   port: 80,
 
-  // 性能
-  maxRequestBodySize: 1024 * 1024 * 10, // 最大请求体 10MB
-  idleTimeout: 60,                      // 连接空闲超时（秒）
+  // 最大请求体 10MB
+  maxRequestBodySize: 1024 * 1024 * 10,
+  // 低内存模式
+  lowMemoryMode: true,
+  // 连接空闲超时（秒）
+  idleTimeout: 60,
 
   // Hono
   fetch: app.fetch,

@@ -6,7 +6,7 @@
     "module": "Preserve",
     "moduleDetection": "force",
     "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx",  // <-- 只加这行
+    "jsxImportSource": "hono/jsx",
     "allowJs": true,
     "types": ["bun"],
 
