@@ -103,6 +103,91 @@ GET /?wd=关键词&pg=1    # 搜索
 GET /?info=视频ID       # 视频详情
 ```
 
+## Linux 部署指南
+
+### 1. 安装 Bun
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc
+```
+
+### 2. 克隆项目
+
+```bash
+git clone https://github.com/your-repo/bunhono-video.git
+cd bunhono-video
+```
+
+### 3. 安装依赖
+
+```bash
+bun install
+```
+
+### 4. 使用 80 端口运行
+
+由于 80 端口是特权端口，需要使用 sudo 或以 root 用户运行：
+
+```bash
+sudo bun run start
+```
+
+或者使用 setcap 授予权限（推荐）：
+
+```bash
+sudo setcap 'cap_net_bind_service=+ep' /path/to/bun
+bun run start
+```
+
+### 5. 后台运行
+
+使用 systemd 创建服务（推荐）：
+
+```bash
+sudo nano /etc/systemd/system/bunhono-video.service
+```
+
+添加以下内容：
+
+```ini
+[Unit]
+Description=Bun Hono Video Site
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/path/to/bunhono-video
+ExecStart=/path/to/bun run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+启动服务：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable bunhono-video
+sudo systemctl start bunhono-video
+```
+
+查看状态：
+
+```bash
+sudo systemctl status bunhono-video
+```
+
+### 6. 配置防火墙
+
+```bash
+sudo ufw allow 80/tcp
+sudo ufw reload
+```
+
 ## License
 
 MIT

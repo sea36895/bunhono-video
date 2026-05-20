@@ -557,8 +557,8 @@ function renderInfoPage(c: any, videoInfo: Video, playerScript: string, baseUrl:
 ${playerScript}`;
 }
 
-console.log('Server is running on http://localhost:3000');
+console.log('Server is running on http://localhost:80');
 export default {
-  port: 3000,
+  port: 80,
   fetch: app.fetch
 };
